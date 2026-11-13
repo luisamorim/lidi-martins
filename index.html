@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0d10">
+<meta name="color-scheme" content="dark">
+<title>CifraCube · Repertório</title>
+<style>
+  :root {
+    --bg: #0b0d10; --panel: #151a20; --panel2: #1d242c; --line: #2a333d;
+    --text: #eef2f6; --muted: #9aa7b4; --chord: #ffc83d; --accent: #3ddc84;
+    --tab: #7fd4ff; --fs: 18px;
+    --safe-b: env(safe-area-inset-bottom, 0px); --safe-t: env(safe-area-inset-top, 0px);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+
+  /* ---------- Lista ---------- */
+  header.top { position: sticky; top: 0; z-index: 5; background: var(--bg);
+    padding: calc(10px + var(--safe-t)) 12px 10px; border-bottom: 1px solid var(--line); }
+  header.top h1 { margin: 0 0 8px; font-size: 1.1rem; display: flex; justify-content: space-between; align-items: baseline; }
+  header.top h1 small { color: var(--muted); font-weight: 400; font-size: .85rem; }
+  .reps { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; margin: 0 0 8px; }
+  .reps button { min-height: 44px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); font-weight: 600; }
+  .reps button[aria-pressed=true] { background: var(--accent); border-color: var(--accent); color: #04130a; }
+  .search { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line);
+    background: var(--panel); color: var(--text); font-size: 1rem; }
+  .list { list-style: none; margin: 0; padding: 8px 8px calc(24px + var(--safe-b)); }
+  .list a { display: flex; gap: 12px; align-items: center; min-height: 58px; padding: 8px 12px;
+    border-radius: 12px; color: inherit; text-decoration: none; }
+  .list a:active, .list a:hover { background: var(--panel); }
+  .list .num { flex: 0 0 2.6em; text-align: right; color: var(--accent); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .list .t { font-weight: 600; }
+  .list .a { color: var(--muted); font-size: .9rem; }
+  .list li.last a { background: var(--panel); outline: 1px solid var(--line); }
+  .empty { color: var(--muted); text-align: center; padding: 40px 16px; }
+
+  /* ---------- Música ---------- */
+  #song { position: fixed; inset: 0; display: flex; flex-direction: column; background: var(--bg); z-index: 10; }
+  .bar { display: flex; align-items: center; gap: 8px; padding: calc(8px + var(--safe-t)) 8px 8px;
+    border-bottom: 1px solid var(--line); background: var(--bg); }
+  .bar .ttl { flex: 1; min-width: 0; }
+  .bar .ttl b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar .ttl span { display: block; color: var(--muted); font-size: .8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .btn { min-width: 48px; min-height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line);
+    background: var(--panel); display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+  .btn:active { background: var(--panel2); }
+  .btn.on { background: var(--accent); color: #04130a; border-color: var(--accent); font-weight: 700; }
+
+  .tools { padding: 10px 12px; background: var(--panel); border-bottom: 1px solid var(--line);
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 12px; }
+  .tools .grp { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .tools .grp > span { color: var(--muted); font-size: .85rem; }
+  .tools .val { min-width: 3.2em; text-align: center; font-variant-numeric: tabular-nums; font-weight: 700; }
+  .tools .full { grid-column: 1 / -1; }
+  .tools .grp.full { flex-wrap: wrap; justify-content: flex-start; }
+  .tools input[type=range] { width: 100%; accent-color: var(--accent); height: 32px; }
+  .chips { max-width: 100vw; display: flex; gap: 6px; overflow-x: auto; padding: 8px 8px; border-bottom: 1px solid var(--line); }
+  .chips:empty { display: none; }
+  .chips button { white-space: nowrap; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+
+  #scroller { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; padding: 12px 14px 40vh; }
+  pre.cifra { margin: 0; font: var(--fs)/1.35 ui-monospace, "SF Mono", Menlo, Consolas, monospace; white-space: pre; tab-size: 4; }
+  pre.cifra .c { color: var(--chord); font-weight: 700; }
+  pre.cifra .sec { color: var(--accent); font-weight: 700; }
+  pre.cifra .tab { color: var(--tab); }
+  pre.cifra.nochords .cl { display: none; }
+  pre.cifra.notabs .tab { display: none; }
+
+  .nav { width: 100%; display: grid; grid-template-columns: 1fr 1.4fr 1fr; gap: 8px; padding: 8px 8px calc(8px + var(--safe-b));
+    border-top: 1px solid var(--line); background: var(--bg); }
+  .nav .btn { min-height: 56px; font-size: 1rem; min-width: 0; padding: 0 8px; overflow: hidden; }
+  .nav .btn small { color: var(--muted); font-size: .7rem; display: block; max-width: 26vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .nav .btn.on small { color: #04130a; }
+  .nav .btn[disabled] { opacity: .35; }
+
+  @media (min-width: 720px) {
+    .list, header.top { max-width: 720px; margin-inline: auto; }
+    header.top { border-inline: 1px solid var(--line); }
+    #scroller { padding-inline: max(14px, calc((100% - 760px) / 2)); }
+  }
+</style>
+</head>
+<body>
+
+<!-- LISTA -->
+<main id="home">
+  <header class="top">
+    <h1><span id="repName">Repertório</span> <small id="count"></small></h1>
+    <div class="reps" id="reps" role="group" aria-label="Repertórios"></div>
+    <input class="search" id="q" type="search" placeholder="Buscar música, artista ou número" autocomplete="off" aria-label="Buscar">
+  </header>
+  <ul class="list" id="list"></ul>
+  <p class="empty" id="empty" hidden>Nenhuma música encontrada.</p>
+</main>
+
+<!-- MÚSICA -->
+<section id="song" hidden aria-label="Cifra">
+  <div class="bar">
+    <button class="btn" id="back" aria-label="Voltar para a lista">←</button>
+    <div class="ttl"><b id="sTitle"></b><span id="sArtist"></span></div>
+    <button class="btn" id="toolsBtn" aria-expanded="false" aria-controls="tools" aria-label="Ajustes">Aa ⚙</button>
+  </div>
+
+  <div class="tools" id="tools" hidden>
+    <div class="grp"><span>Fonte</span>
+      <span><button class="btn" id="fMinus" aria-label="Diminuir fonte">A−</button>
+      <span class="val" id="fVal"></span>
+      <button class="btn" id="fPlus" aria-label="Aumentar fonte">A+</button></span></div>
+    <div class="grp"><span>Tom</span>
+      <span><button class="btn" id="tMinus" aria-label="Descer meio tom">−</button>
+      <span class="val" id="tVal"></span>
+      <button class="btn" id="tPlus" aria-label="Subir meio tom">+</button></span></div>
+    <label class="grp full"><span>Velocidade da rolagem</span><span class="val" id="sVal"></span></label>
+    <input class="full" type="range" id="speed" min="1" max="10" step="1" aria-label="Velocidade da rolagem">
+    <div class="grp full">
+      <button class="btn" id="chordsBtn" aria-pressed="true">Mostrar acordes</button>
+      <button class="btn" id="tabsBtn" aria-pressed="true">Tablaturas: sim</button>
+      <button class="btn" id="wakeBtn" aria-pressed="false">Manter tela ligada</button>
+    </div>
+  </div>
+
+  <div class="chips" id="chips" aria-label="Seções"></div>
+  <div id="scroller" tabindex="0"><pre class="cifra" id="cifra"></pre></div>
+
+  <nav class="nav">
+    <button class="btn" id="prev"><span>‹ Anterior<small id="prevT"></small></span></button>
+    <button class="btn" id="play" aria-pressed="false">▶ Rolar</button>
+    <button class="btn" id="next"><span>Próxima ›<small id="nextT"></small></span></button>
+  </nav>
+</section>
+
+<script src="data.js"></script>
+<script>
+(() => {
+  'use strict';
+  const REPS = window.REPERTOIRES || [];
+  let rep = REPS[0];            // repertório ativo
+  let SONGS = rep ? rep.songs : [];
+  const $ = (id) => document.getElementById(id);
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem('cc.' + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+    set(k, v) { try { localStorage.setItem('cc.' + k, JSON.stringify(v)); } catch {} },
+  };
+  const esc = (s) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  const norm = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+  /* ---------- Acordes ---------- */
+  const CHORD = /^[A-G][#b]?(?:m(?:aj|in)?|M|dim|aug|sus|add|°|º|\+|\d[A-G]|\d|\(|\)|#|b|-|\/)*(?:\/[A-G][#b]?)?$/;
+  const FILLER = /^(?:x?\d+x?|[-|%.:\/\\~*]+|N\.?C\.?|riff)$/i;
+  const SEC_TAG = /^(\s*)(\[[^\]]+\])/;
+  const SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  const FLAT  = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+  const IDX = { C:0,'C#':1,Db:1,D:2,'D#':3,Eb:3,E:4,F:5,'F#':6,Gb:6,G:7,'G#':8,Ab:8,A:9,'A#':10,Bb:10,B:11 };
+
+  const stripEdges = (t) => t.replace(/^[(|]+/, '').replace(/[)|,;]+$/, '');
+  function isChordLine(line) {
+    const body = line.replace(SEC_TAG, '$1');
+    const toks = body.trim().split(/\s+/).filter(Boolean);
+    if (!toks.length) return false;
+    let chords = 0;
+    for (const t of toks) {
+      const c = stripEdges(t);
+      if (c && CHORD.test(c)) chords++;
+      else if (c && !FILLER.test(c) && !FILLER.test(t)) return false;
+    }
+    return chords > 0;
+  }
+  const isTab = (l) => /^\s*[A-Ga-g]?[|:][-0-9xhpHPbBrR/\\~^()|*]{5,}/.test(l) && /[-|]{3,}/.test(l)
+    || /^\s*[↓↑vV\s]+$/.test(l) && /[↓↑]/.test(l)
+    || /^\s*\S+\s*=\s*[\dXx]([\sXx\d]+)$/.test(l); // diagramas "G = 3 2 0 0 0 3"
+
+  function shiftChord(ch, n) {
+    return ch.replace(/[A-G][#b]?/g, (r, off, str) => {
+      if (off > 0 && str[off - 1] !== '/' && str[off - 1] !== '(') return r; // só raiz e baixo
+      const i = IDX[r]; if (i === undefined) return r;
+      return (r.includes('b') ? FLAT : SHARP)[(i + n + 120) % 12];
+    });
+  }
+  // Transpõe mantendo o alinhamento colunar
+  function transposeLine(line, n) {
+    if (!n) return line;
+    const m = line.match(SEC_TAG);
+    const head = m ? m[0] : '';
+    const rest = line.slice(head.length);
+    let out = '', carry = 0, last = 0;
+    for (const t of rest.matchAll(/\S+/g)) {
+      let gap = t.index - last;
+      gap = Math.max(out === '' && !head ? gap : 1, gap + carry); carry = 0;
+      out += ' '.repeat(gap);
+      const core = stripEdges(t[0]);
+      let w = t[0];
+      if (CHORD.test(core)) { w = t[0].replace(core, shiftChord(core, n)); carry = t[0].length - w.length; }
+      out += w; last = t.index + t[0].length;
+    }
+    return head + out;
+  }
+
+  /* ---------- Estado ---------- */
+  const state = {
+    i: -1, fs: store.get('fs', 18), speed: store.get('speed', 3),
+    chords: store.get('chords', true), wake: store.get('wake', false),
+    tr: {}, tabs: store.get('tabs', true), playing: false,
+  };
+  const label = (s) => s.n + '. ' + s.title;
+
+  /* ---------- Lista ---------- */
+  function setRep(id) {
+    rep = REPS.find((x) => x.id === id) || REPS[0];
+    SONGS = rep.songs; store.set('rep', rep.id);
+    // compatibilidade: transposições/última música salvas antes dos repertórios pertenciam ao lidi-martins
+    state.tr = store.get('tr.' + rep.id, rep === REPS[0] ? store.get('tr', {}) : {});
+  }
+  const lastKey = () => store.get('last.' + rep.id, rep === REPS[0] ? store.get('last', null) : null);
+
+  function renderReps() {
+    $('reps').hidden = REPS.length < 2;   // site de um único repertório: sem abas
+    $('reps').innerHTML = REPS.map((x) =>
+      `<button data-id="${x.id}" aria-pressed="${x === rep}">${esc(x.name)}</button>`).join('');
+    $('repName').textContent = rep.name;
+  }
+
+  function renderList() {
+    renderReps();
+    const q = norm($('q').value.trim());
+    const last = lastKey();
+    const items = SONGS.map((s, i) => ({ s, i })).filter(({ s }) =>
+      !q || norm(`${s.n} ${s.title} ${s.artist}`).includes(q));
+    $('list').innerHTML = items.map(({ s, i }) =>
+      `<li class="${i === last ? 'last' : ''}"><a href="#/${rep.id}/${i}"><span class="num">${esc(s.n)}</span>` +
+      `<span><span class="t">${esc(s.title)}</span><br><span class="a">${esc(s.artist)}</span></span></a></li>`).join('');
+    $('empty').hidden = items.length > 0;
+    $('count').textContent = SONGS.length + ' músicas';
+  }
+
+  /* ---------- Música ---------- */
+  function renderSong() {
+    const s = SONGS[state.i]; if (!s) return;
+    const n = state.tr[state.i] || 0;
+    const lines = s.text.split('\n');
+    const chips = [];
+    const html = lines.map((raw, k) => {
+      if (isTab(raw)) return `<span class="tab">${esc(raw)}\n</span>`;
+      const sm = raw.match(SEC_TAG);
+      const rest = sm ? raw.slice(sm[0].length) : raw;
+      if (sm) chips.push([sm[2].slice(1, -1), k]);
+      if (isChordLine(raw)) {
+        const t = transposeLine(raw, n);
+        const tm = t.match(SEC_TAG);
+        const head = tm ? `<span class="sec">${esc(tm[0])}</span>` : '';
+        const body = esc(tm ? t.slice(tm[0].length) : t).replace(/\S+/g, (w) => {
+          return CHORD.test(stripEdges(w)) ? `<span class="c">${w}</span>` : w;
+        });
+        return `<span class="cl" data-k="${k}">${head}${body}\n</span>`;
+      }
+      if (sm && !rest.trim()) return `<span class="sec" data-k="${k}">${esc(raw)}\n</span>`;
+      return `<span data-k="${k}">${esc(raw)}\n</span>`;
+    }).join('');
+    $('cifra').innerHTML = html;
+    $('cifra').classList.toggle('nochords', !state.chords);
+    $('cifra').classList.toggle('notabs', !state.tabs);
+    $('sTitle').textContent = label(s);
+    $('sArtist').textContent = [s.artist, rep.name].filter(Boolean).join(' · ');
+    $('chips').innerHTML = chips.map(([t, k]) => `<button data-k="${k}">${esc(t)}</button>`).join('');
+    const p = SONGS[state.i - 1], nx = SONGS[state.i + 1];
+    $('prev').disabled = !p; $('next').disabled = !nx;
+    $('prevT').textContent = p ? p.title : ''; $('nextT').textContent = nx ? nx.title : '';
+    document.title = `${s.title}${s.artist ? ' · ' + s.artist : ''}`;
+    syncTools();
+  }
+  function syncTools() {
+    document.documentElement.style.setProperty('--fs', state.fs + 'px');
+    $('fVal').textContent = state.fs;
+    const n = state.tr[state.i] || 0;
+    $('tVal').textContent = (n > 0 ? '+' : '') + n;
+    $('sVal').textContent = state.speed; $('speed').value = state.speed;
+    $('chordsBtn').setAttribute('aria-pressed', state.chords);
+    $('chordsBtn').textContent = state.chords ? 'Acordes: sim' : 'Acordes: não';
+    $('tabsBtn').setAttribute('aria-pressed', state.tabs);
+    $('tabsBtn').textContent = state.tabs ? 'Tablaturas: sim' : 'Tablaturas: não';
+    $('wakeBtn').setAttribute('aria-pressed', state.wake);
+    $('wakeBtn').classList.toggle('on', state.wake);
+  }
+
+  function openSong(i) {
+    if (!SONGS[i]) return showHome();
+    stopScroll();
+    state.i = i; store.set('last.' + rep.id, i);
+    $('home').hidden = true; $('song').hidden = false;
+    renderSong(); $('scroller').scrollTop = 0;
+    applyWake();
+  }
+  function showHome() {
+    stopScroll(); releaseWake();
+    $('song').hidden = true; $('home').hidden = false;
+    document.title = 'CifraCube · ' + rep.name;
+    renderList();
+    const el = document.querySelector('#list li.last');
+    if (el) el.scrollIntoView({ block: 'center' });
+  }
+  function route() {
+    // #/<repertório>/<n>  (ou o antigo #/<n>, que aponta para o 1º repertório)
+    const m = location.hash.match(/^#\/(?:([\w-]+)\/)?(\d+)$/);
+    setRep(m ? (m[1] || REPS[0].id) : store.get('rep', REPS[0].id));
+    m ? openSong(+m[2]) : showHome();
+  }
+  const go = (i) => { location.hash = `#/${rep.id}/${i}`; };
+
+  /* ---------- Rolagem automática ---------- */
+  let raf = 0, acc = 0, prevTs = 0;
+  function tick(ts) {
+    const sc = $('scroller');
+    acc += (ts - prevTs) / 1000 * state.speed * 8; prevTs = ts; // px/s = velocidade × 8
+    const whole = Math.floor(acc);
+    if (whole) { sc.scrollTop += whole; acc -= whole; }
+    if (sc.scrollTop + sc.clientHeight >= sc.scrollHeight - 1) return stopScroll();
+    raf = requestAnimationFrame(tick);
+  }
+  function startScroll() { state.playing = true; acc = 0; prevTs = performance.now(); raf = requestAnimationFrame(tick); uiPlay(); }
+  function stopScroll() { state.playing = false; cancelAnimationFrame(raf); uiPlay(); }
+  function uiPlay() {
+    const b = $('play'); b.classList.toggle('on', state.playing);
+    b.setAttribute('aria-pressed', state.playing);
+    b.textContent = state.playing ? '❚❚ Pausar' : '▶ Rolar';
+  }
+
+  /* ---------- Tela ligada ---------- */
+  let lock = null;
+  async function applyWake() {
+    if (!state.wake || !('wakeLock' in navigator) || $('song').hidden) return;
+    try { lock = await navigator.wakeLock.request('screen'); } catch {}
+  }
+  function releaseWake() { try { lock?.release(); } catch {} lock = null; }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') applyWake(); });
+
+  /* ---------- Eventos ---------- */
+  $('q').addEventListener('input', renderList);
+  $('reps').onclick = (e) => {
+    const id = e.target.closest('button')?.dataset.id; if (!id) return;
+    setRep(id); $('q').value = ''; renderList();
+    const el = document.querySelector('#list li.last'); if (el) el.scrollIntoView({ block: 'center' });
+  };
+  $('back').onclick = () => { location.hash = ''; };
+  $('prev').onclick = () => go(state.i - 1);
+  $('next').onclick = () => go(state.i + 1);
+  $('play').onclick = () => (state.playing ? stopScroll() : startScroll());
+  $('toolsBtn').onclick = () => {
+    const open = $('tools').hidden; $('tools').hidden = !open;
+    $('toolsBtn').setAttribute('aria-expanded', open);
+  };
+  $('fMinus').onclick = () => { state.fs = Math.max(10, state.fs - 2); store.set('fs', state.fs); syncTools(); };
+  $('fPlus').onclick = () => { state.fs = Math.min(40, state.fs + 2); store.set('fs', state.fs); syncTools(); };
+  const tr = (d) => { state.tr[state.i] = ((state.tr[state.i] || 0) + d + 12 + 5) % 12 - 5; store.set('tr.' + rep.id, state.tr); renderSong(); };
+  $('tMinus').onclick = () => tr(-1);
+  $('tPlus').onclick = () => tr(1);
+  $('speed').oninput = (e) => { state.speed = +e.target.value; store.set('speed', state.speed); syncTools(); };
+  $('chordsBtn').onclick = () => { state.chords = !state.chords; store.set('chords', state.chords); renderSong(); };
+  $('tabsBtn').onclick = () => { state.tabs = !state.tabs; store.set('tabs', state.tabs); renderSong(); };
+  $('wakeBtn').onclick = () => {
+    state.wake = !state.wake; store.set('wake', state.wake); syncTools();
+    state.wake ? applyWake() : releaseWake();
+  };
+  $('chips').onclick = (e) => {
+    const k = e.target.closest('button')?.dataset.k; if (k == null) return;
+    const el = $('cifra').querySelector(`[data-k="${k}"]`);
+    if (el) $('scroller').scrollTo({ top: el.offsetTop - 8, behavior: 'smooth' });
+  };
+  // Tocar na cifra pausa/retoma a rolagem; gesto manual também pausa
+  $('scroller').addEventListener('touchstart', () => { if (state.playing) stopScroll(); }, { passive: true });
+  $('scroller').addEventListener('wheel', () => { if (state.playing) stopScroll(); }, { passive: true });
+  document.addEventListener('keydown', (e) => {
+    if ($('song').hidden || e.target.matches('input')) return;
+    if (e.key === 'ArrowRight' && SONGS[state.i + 1]) go(state.i + 1);
+    else if (e.key === 'ArrowLeft' && SONGS[state.i - 1]) go(state.i - 1);
+    else if (e.key === ' ') { e.preventDefault(); $('play').click(); }
+    else if (e.key === 'Escape') location.hash = '';
+  });
+  window.addEventListener('hashchange', route);
+
+  route();
+})();
+</script>
+</body>
+</html>
